@@ -7,7 +7,9 @@ def main():
     cryptopro = CryptoProRegistry(user.sid)
     print(f"Current user", user)
     print(f"CryptoPro CSP path", cryptopro.keypath)
-    pass
+    print("Container list:")
+    for container in cryptopro.containers():
+        print(container)
 
 
 if __name__ == '__main__':

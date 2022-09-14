@@ -1,4 +1,4 @@
-from winreg import ConnectRegistry, OpenKey
+from winreg import ConnectRegistry, OpenKey, EnumKey
 from winreg import HKEY_LOCAL_MACHINE
 
 
@@ -20,3 +20,14 @@ class CryptoProRegistry:
             except:
                 raise Exception('CryptoPro not installed')
 
+    def containers(self):
+        reg = ConnectRegistry(None, HKEY_LOCAL_MACHINE)
+        key = OpenKey(reg, self.keypath)
+        counter = 0
+        while True:
+            try:
+                subkey = EnumKey(key, counter)
+                counter += 1
+                yield subkey
+            except WindowsError as e:
+                break

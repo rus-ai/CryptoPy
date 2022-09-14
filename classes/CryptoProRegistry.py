@@ -1,4 +1,4 @@
-from winreg import ConnectRegistry, OpenKey, EnumKey
+from winreg import ConnectRegistry, OpenKey, EnumKey, QueryValueEx
 from winreg import HKEY_LOCAL_MACHINE
 
 
@@ -31,3 +31,9 @@ class CryptoProRegistry:
                 yield subkey
             except WindowsError as e:
                 break
+
+    def get_container(self, name):
+        reg = ConnectRegistry(None, HKEY_LOCAL_MACHINE)
+        key = OpenKey(reg, f"{self.keypath}{name}")
+        header = QueryValueEx(key, "header.key")
+        return header

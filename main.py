@@ -10,6 +10,7 @@ def main():
     print("Container list:")
     for container in cryptopro.containers():
         print(container)
+        print(cryptopro.get_container(container))
 
 
 if __name__ == '__main__':

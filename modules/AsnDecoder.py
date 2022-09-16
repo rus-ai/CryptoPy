@@ -1,6 +1,6 @@
 import binascii
 import sys
-import asn1
+import modules.asn1 as asn1
 
 tag_id_to_string_map = {
     asn1.Numbers.Boolean: "BOOLEAN",
@@ -60,6 +60,33 @@ object_id_to_string_map = {
     "2.5.29.36": "X509v3 Policy Constraints",
     "2.5.29.37": "X509v3 Extended Key Usage"
 }
+
+
+def read(self, tagnr=None):  # type: (Number) -> (Tag, any)
+    """This method decodes one ASN.1 tag from the input and returns it as a
+    ``(tag, value)`` tuple. ``tag`` is a 3-tuple ``(nr, typ, cls)``,
+    while ``value`` is a Python object representing the ASN.1 value.
+    The offset in the input is increased so that the next `Decoder.read()`
+    call will return the next tag. In case no more data is available from
+    the input, this method returns ``None`` to signal end-of-file.
+
+    Returns:
+        `Tag`, value: The current ASN.1 tag and its value.
+
+    Raises:
+        `Error`
+    """
+    if self.m_stack is None:
+        raise Error('No input selected. Call start() first.')
+    if self._end_of_input():
+        return None
+    tag = self.peek()
+    length = self._read_length()
+    if tagnr is None:
+        tagnr = tag.nr
+    value = self._read_value(tag.cls, tagnr, length)
+    self.m_tag = None
+    return tag, value
 
 
 def tag_id_to_string(identifier):

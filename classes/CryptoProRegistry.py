@@ -1,6 +1,7 @@
 from winreg import ConnectRegistry, OpenKey, EnumKey, QueryValueEx
 from winreg import HKEY_LOCAL_MACHINE
 
+from classes.CryptoContainer import CryptoContainer
 
 CRYPTO_PRO_64 = 'SOFTWARE\\WOW6432Node\\Crypto Pro\\'
 CRYPTO_PRO_32 = 'SOFTWARE\\Crypto Pro\\'
@@ -35,5 +36,11 @@ class CryptoProRegistry:
     def get_container(self, name):
         reg = ConnectRegistry(None, HKEY_LOCAL_MACHINE)
         key = OpenKey(reg, f"{self.keypath}{name}")
-        header = QueryValueEx(key, "header.key")
-        return header
+        container = CryptoContainer(name, "registry")
+        container.key_header, _ = QueryValueEx(key, "header.key")
+        container.key_masks, _ = QueryValueEx(key, "masks.key")
+        container.key_mask2, _ = QueryValueEx(key, "masks2.key")
+        container.key_name, _ = QueryValueEx(key, "name.key")
+        container.key_primary, _ = QueryValueEx(key, "primary.key")
+        container.key_primary2, _ = QueryValueEx(key, "primary2.key")
+        return container

@@ -654,7 +654,7 @@ class Decoder(object):
     @staticmethod
     def _decode_printable_string(bytes_data):  # type: (bytes) -> str
         """Decode a printable string."""
-        return bytes_data.decode('utf-8')
+        return bytes_data.decode('cp1251')
 
     @staticmethod
     def _decode_bitstring(bytes_data):  # type: (bytes) -> str

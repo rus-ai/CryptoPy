@@ -12,7 +12,7 @@ def main():
     for container_name in cryptopro.containers():
         print(container_name)
         container = cryptopro.get_container(container_name)
-        print_keyfile(container.key_name)
+        print_keyfile(container.key_header)
 
 
 if __name__ == '__main__':

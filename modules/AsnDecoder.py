@@ -26,67 +26,12 @@ class_id_to_string_map = {
 }
 
 object_id_to_string_map = {
-    "1.2.840.113549.1.1.1": "rsaEncryption",
-    "1.2.840.113549.1.1.5": "sha1WithRSAEncryption",
-
-    "1.3.6.1.5.5.7.1.1": "authorityInfoAccess",
-
-    "2.5.4.3": "commonName",
-    "2.5.4.4": "surname",
-    "2.5.4.5": "serialNumber",
-    "2.5.4.6": "countryName",
-    "2.5.4.7": "localityName",
-    "2.5.4.8": "stateOrProvinceName",
-    "2.5.4.9": "streetAddress",
-    "2.5.4.10": "organizationName",
-    "2.5.4.11": "organizationalUnitName",
-    "2.5.4.12": "title",
-    "2.5.4.13": "description",
-    "2.5.4.42": "givenName",
-
-    "1.2.840.113549.1.9.1": "emailAddress",
-
-    "2.5.29.14": "X509v3 Subject Key Identifier",
-    "2.5.29.15": "X509v3 Key Usage",
-    "2.5.29.16": "X509v3 Private Key Usage Period",
-    "2.5.29.17": "X509v3 Subject Alternative Name",
-    "2.5.29.18": "X509v3 Issuer Alternative Name",
-    "2.5.29.19": "X509v3 Basic Constraints",
-    "2.5.29.30": "X509v3 Name Constraints",
-    "2.5.29.31": "X509v3 CRL Distribution Points",
-    "2.5.29.32": "X509v3 Certificate Policies Extension",
-    "2.5.29.33": "X509v3 Policy Mappings",
-    "2.5.29.35": "X509v3 Authority Key Identifier",
-    "2.5.29.36": "X509v3 Policy Constraints",
-    "2.5.29.37": "X509v3 Extended Key Usage"
+    "1.2.643.2.2.36.0": "cryptopro-XchA",
+    "1.2.643.2.2.37.2.1": "private-keys",
+    "1.2.643.2.2.37.3.10": "Expiration???",
+    "1.2.643.7.1.1.2.2": "Hash???",
+    "1.2.643.7.1.1.6.1": "Elliptic-curve Diffie–Hellman 256",
 }
-
-
-def read(self, tagnr=None):  # type: (Number) -> (Tag, any)
-    """This method decodes one ASN.1 tag from the input and returns it as a
-    ``(tag, value)`` tuple. ``tag`` is a 3-tuple ``(nr, typ, cls)``,
-    while ``value`` is a Python object representing the ASN.1 value.
-    The offset in the input is increased so that the next `Decoder.read()`
-    call will return the next tag. In case no more data is available from
-    the input, this method returns ``None`` to signal end-of-file.
-
-    Returns:
-        `Tag`, value: The current ASN.1 tag and its value.
-
-    Raises:
-        `Error`
-    """
-    if self.m_stack is None:
-        raise Error('No input selected. Call start() first.')
-    if self._end_of_input():
-        return None
-    tag = self.peek()
-    length = self._read_length()
-    if tagnr is None:
-        tagnr = tag.nr
-    value = self._read_value(tag.cls, tagnr, length)
-    self.m_tag = None
-    return tag, value
 
 
 def tag_id_to_string(identifier):

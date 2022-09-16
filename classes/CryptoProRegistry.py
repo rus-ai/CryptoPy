@@ -39,7 +39,7 @@ class CryptoProRegistry:
         container = CryptoContainer(name, "registry")
         container.key_header, _ = QueryValueEx(key, "header.key")
         container.key_masks, _ = QueryValueEx(key, "masks.key")
-        container.key_mask2, _ = QueryValueEx(key, "masks2.key")
+        container.key_masks2, _ = QueryValueEx(key, "masks2.key")
         container.key_name, _ = QueryValueEx(key, "name.key")
         container.key_primary, _ = QueryValueEx(key, "primary.key")
         container.key_primary2, _ = QueryValueEx(key, "primary2.key")

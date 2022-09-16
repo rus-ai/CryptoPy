@@ -58,7 +58,8 @@ def value_to_string(tag_number, value):
     if tag_number == asn1.Numbers.ObjectIdentifier:
         return object_identifier_to_string(value)
     elif isinstance(value, bytes):
-        return '0x' + str(binascii.hexlify(value).upper())
+        # return '0x' + str(binascii.hexlify(value).upper())
+        return value.decode("utf-8", errors="ignore")
     elif isinstance(value, str):
         return value
     else:
@@ -68,13 +69,15 @@ def value_to_string(tag_number, value):
 def pretty_print(input_stream, output_stream, indent=0):
     while not input_stream.eof():
         tag = input_stream.peek()
+        tag_name = tag_id_to_string(tag.nr)
+        tag_class = class_id_to_string(tag.cls)
         if tag.typ == asn1.Types.Primitive:
             tag, value = input_stream.read()
             output_stream.write(' ' * indent)
-            output_stream.write('[{}] {}: {}\n'.format(class_id_to_string(tag.cls), tag_id_to_string(tag.nr), value_to_string(tag.nr, value)))
+            output_stream.write('[{}] {}: {}\n'.format(tag_class, tag_name, value_to_string(tag.nr, value)))
         elif tag.typ == asn1.Types.Constructed:
             output_stream.write(' ' * indent)
-            output_stream.write('[{}] {}\n'.format(class_id_to_string(tag.cls), tag_id_to_string(tag.nr)))
+            output_stream.write('[{}] {}\n'.format(tag_class, tag_name))
             input_stream.enter()
             pretty_print(input_stream, output_stream, indent + 2)
             input_stream.leave()

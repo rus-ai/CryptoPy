@@ -71,10 +71,11 @@ def cls_to_string(tag_class):
 
 
 class Asn1Object:
-    def __init__(self, data, intent=0):
+    def __init__(self, data, intent=0, encoding="utf-8"):
         if not isinstance(data, bytes):
             raise Exception('Expecting bytes instance.')
         self.intent = intent
+        self.encoding = encoding
         self.m_stack = [[0, bytes(data)]]
         self.m_tag = None
         self.tag = self._read_tag()
@@ -90,7 +91,14 @@ class Asn1Object:
                 child_asn1 = Asn1Object(child_asn1.remains, intent + 1)
                 self.children.append(child_asn1)
         else:
-            self._decode_primitive()
+            try:
+                child_asn1 = Asn1Object(self.value[1:], intent + 1)
+                self.children.append(child_asn1)
+                while child_asn1.remains:
+                    child_asn1 = Asn1Object(child_asn1.remains, intent + 1)
+                    self.children.append(child_asn1)
+            except:
+                self._decode_primitive()
 
     def __repr__(self):
         typ = "Constructed"
@@ -98,40 +106,35 @@ class Asn1Object:
         children = ""
         if self.tag.typ == Types.Primitive:
             typ = "Primitive"
-            value = " = " + str(self.repr_value)
-        else:
-            for child_asn1 in self.children:
-                children += str(child_asn1)
+            if hasattr(self, "repr_value"):
+                value = " = " + str(self.repr_value)
+        for child_asn1 in self.children:
+            children += str(child_asn1)
         return "    "*self.intent + \
                f"[{cls_to_string(self.tag.cls)}] {tag_to_string(self.tag.nr)} " \
                f"({typ}){value}\n{children}"
 
     def _decode_primitive(self):
-        try:
-            asn1_temp = Asn1Object(self.value)
-        except:
-            if self.tag.nr in (Numbers.PrintableString, Numbers.IA5String,
-                               Numbers.UTF8String, Numbers.UTCTime,
-                               Numbers.GeneralizedTime):
-                self.repr_value = self._decode_printable_string(self.value)
-            elif self.tag.nr == Numbers.ObjectIdentifier:
-                self.repr_value = self._decode_object_identifier(self.value)
-            elif self.tag.nr == Numbers.BitString:
-                self.repr_value = self._decode_bitstring(self.value)
-            elif self.tag.nr in (Numbers.Integer, Numbers.Enumerated):
-                self.repr_value = self._decode_integer(self.value)
-            elif self.tag.nr == Numbers.Boolean:
-                self.repr_value = self._decode_boolean(self.value)
-            elif self.tag.nr in (Numbers.Integer, Numbers.Enumerated):
-                self.repr_value = self._decode_integer(self.value)
-            elif self.tag.nr == Numbers.OctetString:
-                self.repr_value = self._decode_octet_string(self.value)
-            elif self.tag.nr == Numbers.Null:
-                self.repr_value = self._decode_null(self.value)
-            else:
-                self.repr_value = str(self.value)
-            return
-        self.repr_value = "FOUND " + str(asn1_temp.value)
+        if self.tag.nr in (Numbers.PrintableString, Numbers.IA5String,
+                           Numbers.UTF8String, Numbers.UTCTime,
+                           Numbers.GeneralizedTime):
+            self.repr_value = self._decode_printable_string(self.value)
+        elif self.tag.nr == Numbers.ObjectIdentifier:
+            self.repr_value = self._decode_object_identifier(self.value)
+        elif self.tag.nr == Numbers.BitString:
+            self.repr_value = self._decode_bitstring(self.value)
+        elif self.tag.nr in (Numbers.Integer, Numbers.Enumerated):
+            self.repr_value = self._decode_integer(self.value)
+        elif self.tag.nr == Numbers.Boolean:
+            self.repr_value = self._decode_boolean(self.value)
+        elif self.tag.nr in (Numbers.Integer, Numbers.Enumerated):
+            self.repr_value = self._decode_integer(self.value)
+        elif self.tag.nr == Numbers.OctetString:
+            self.repr_value = self._decode_octet_string(self.value)
+        elif self.tag.nr == Numbers.Null:
+            self.repr_value = self._decode_null(self.value)
+        else:
+            self.repr_value = str(self.value)
 
     def _read_tag(self):
         byte = self._read_byte()
@@ -245,9 +248,8 @@ class Asn1Object:
         result = list(map(str, result))
         return str('.'.join(result))
 
-    @staticmethod
-    def _decode_printable_string(bytes_data):
-        return bytes_data.decode('utf-8')
+    def _decode_printable_string(self, bytes_data):
+        return bytes_data.decode(self.encoding)
 
     @staticmethod
     def _decode_bitstring(bytes_data):  # type: (bytes) -> str

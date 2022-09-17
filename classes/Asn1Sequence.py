@@ -84,9 +84,8 @@ class Asn1Sequence:
         typ = "Constructed"
         if self.tag.typ == Types.Primitive:
             typ = "Primitive"
-        return f"Tag nr: {tag_to_string(self.tag.nr)} " \
-               f"Tag type: {typ} " \
-               f"Tag class: {class_to_string(self.tag.cls)}"
+        return f"[{class_to_string(self.tag.cls)}] {tag_to_string(self.tag.nr)} " \
+               f"({typ})"
 
     def _read_tag(self):
         byte = self._read_byte()

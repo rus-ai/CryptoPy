@@ -652,8 +652,7 @@ class Decoder(object):
         return str('.'.join(result))
 
     @staticmethod
-    def _decode_printable_string(bytes_data):  # type: (bytes) -> str
-        """Decode a printable string."""
+    def _decode_printable_string(bytes_data):
         return bytes_data.decode('cp1251')
 
     @staticmethod

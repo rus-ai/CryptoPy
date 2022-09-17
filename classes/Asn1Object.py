@@ -80,6 +80,8 @@ class Asn1Object:
         self.tag = self._read_tag()
         self.length = self._read_length()
         self.value = self._read_value(self.length)
+        index, remains_data = self.m_stack[-1]
+        self.remains = remains_data[index:]
         self.children = []
         if self.tag.typ == Types.Constructed:
             child_asn1 = Asn1Object(self.value, intent + 1)
@@ -87,24 +89,39 @@ class Asn1Object:
             while child_asn1.remains:
                 child_asn1 = Asn1Object(child_asn1.remains, intent + 1)
                 self.children.append(child_asn1)
-        index, remains_data = self.m_stack[-1]
-        self.remains = remains_data[index:]
+        else:
+            self._decode_primitive()
 
     def __repr__(self):
         typ = "Constructed"
+        value = ""
+        children = ""
         if self.tag.typ == Types.Primitive:
             typ = "Primitive"
-        children = ""
-        for child_asn1 in self.children:
-            children += str(child_asn1)
+            value = " = " + str(self.repr_value)
+        else:
+            for child_asn1 in self.children:
+                children += str(child_asn1)
         return "    "*self.intent + \
                f"[{cls_to_string(self.tag.cls)}] {tag_to_string(self.tag.nr)} " \
-               f"({typ})\n{children}"
+               f"({typ}) {value}\n{children}"
 
-    def _end_of_input(self):
-        index, input_data = self.m_stack[-1]
-        assert not index > len(input_data)
-        return index == len(input_data)
+    def _decode_primitive(self):
+        try:
+            asn1_temp = Asn1Object(self.value)
+        except:
+            if self.tag.nr in (Numbers.PrintableString, Numbers.IA5String,
+                               Numbers.UTF8String, Numbers.UTCTime,
+                               Numbers.GeneralizedTime):
+                self.repr_value = self._decode_printable_string(self.value)
+            elif self.tag.nr == Numbers.ObjectIdentifier:
+                self.repr_value = self._decode_object_identifier(self.value)
+            elif self.tag.nr in (Numbers.Integer, Numbers.Enumerated):
+                self.repr_value = self._decode_integer(self.value)
+            else:
+                self.repr_value = str(self.value)
+            return
+        self.repr_value = "FOUND " + str(asn1_temp.value)
 
     def _read_tag(self):
         byte = self._read_byte()
@@ -158,3 +175,95 @@ class Asn1Object:
         self.m_stack[-1][0] += count
         return bytes_data
 
+    @staticmethod
+    def _decode_boolean(bytes_data):  # type: (bytes) -> bool
+        """Decode a boolean value."""
+        if len(bytes_data) != 1:
+            raise Error('ASN1 syntax error')
+        if bytes_data[0] == 0:
+            return False
+        return True
+
+    @staticmethod
+    def _decode_integer(bytes_data):  # type: (bytes) -> int
+        """Decode an integer value."""
+        values = [int(b) for b in bytes_data]
+        # check if the integer is normalized
+        if len(values) > 1 and (values[0] == 0xff and values[1] & 0x80 or values[0] == 0x00 and not (values[1] & 0x80)):
+            raise Exception('ASN1 syntax error')
+        negative = values[0] & 0x80
+        if negative:
+            # make positive by taking two's complement
+            for i in range(len(values)):
+                values[i] = 0xff - values[i]
+            for i in range(len(values) - 1, -1, -1):
+                values[i] += 1
+                if values[i] <= 0xff:
+                    break
+                assert i > 0
+                values[i] = 0x00
+        value = 0
+        for val in values:
+            value = (value << 8) | val
+        if negative:
+            value = -value
+        try:
+            value = int(value)
+        except OverflowError:
+            pass
+        return value
+
+    @staticmethod
+    def _decode_octet_string(bytes_data):  # type: (bytes) -> bytes
+        return bytes_data
+
+    @staticmethod
+    def _decode_null(bytes_data):  # type: (bytes) -> any
+        if len(bytes_data) != 0:
+            raise Error('ASN1 syntax error')
+        return None
+
+    @staticmethod
+    def _decode_object_identifier(bytes_data):  # type: (bytes) -> str
+        result = []
+        value = 0
+        for i in range(len(bytes_data)):
+            byte = int(bytes_data[i])
+            if value == 0 and byte == 0x80:
+                raise Exception('ASN1 syntax error')
+            value = (value << 7) | (byte & 0x7f)
+            if not byte & 0x80:
+                result.append(value)
+                value = 0
+        if len(result) == 0 or result[0] > 1599:
+            raise Exception('ASN1 syntax error')
+        result = [result[0] // 40, result[0] % 40] + result[1:]
+        result = list(map(str, result))
+        return str('.'.join(result))
+
+    @staticmethod
+    def _decode_printable_string(bytes_data):
+        return bytes_data.decode('cp1251')
+
+    @staticmethod
+    def _decode_bitstring(bytes_data):  # type: (bytes) -> str
+        if len(bytes_data) == 0:
+            raise Error('ASN1 syntax error')
+
+        num_unused_bits = bytes_data[0]
+        if not (0 <= num_unused_bits <= 7):
+            raise Error('ASN1 syntax error')
+
+        if num_unused_bits == 0:
+            return bytes_data[1:]
+
+        remaining = bytearray(bytes_data[1:])
+        bitmask = (1 << num_unused_bits) - 1
+        removed_bits = 0
+
+        for i in range(len(remaining)):
+            byte = int(remaining[i])
+            remaining[i] = (byte >> num_unused_bits) | (removed_bits << num_unused_bits)
+            removed_bits = byte & bitmask
+
+        return bytes(remaining)

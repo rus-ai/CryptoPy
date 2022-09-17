@@ -70,7 +70,7 @@ def cls_to_string(tag_class):
     raise ValueError('Illegal class: {:#02x}'.format(tag_class))
 
 
-class Asn1Sequence:
+class Asn1Object:
     def __init__(self, data, intent=0):
         if not isinstance(data, bytes):
             raise Exception('Expecting bytes instance.')
@@ -80,17 +80,22 @@ class Asn1Sequence:
         self.tag = self._read_tag()
         self.length = self._read_length()
         self.value = self._read_value(self.length)
-        self.child = []
+        self.children = []
         if self.tag.typ == Types.Constructed:
-            child_asn1 = Asn1Sequence(self.value, intent+1)
-            self.child.append(child_asn1)
+            child_asn1 = Asn1Object(self.value, intent + 1)
+            self.children.append(child_asn1)
+            while child_asn1.remain:
+                child_asn1 = Asn1Object(child_asn1.remain, intent + 1)
+                self.children.append(child_asn1)
+        index, remain_data = self.m_stack[-1]
+        self.remain = remain_data[index:]
 
     def __repr__(self):
         typ = "Constructed"
         if self.tag.typ == Types.Primitive:
             typ = "Primitive"
         children = ""
-        for child_asn1 in self.child:
+        for child_asn1 in self.children:
             children += str(child_asn1)
         return "    "*self.intent + \
                f"[{cls_to_string(self.tag.cls)}] {tag_to_string(self.tag.nr)} " \

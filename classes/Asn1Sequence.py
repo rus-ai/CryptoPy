@@ -79,13 +79,16 @@ class Asn1Sequence:
         self.tag = self._read_tag()
         self.length = self._read_length()
         self.value = self._read_value(self.length)
+        self.child = []
+        if self.tag.typ == Types.Constructed:
+            self.child = Asn1Sequence(self.value)
 
     def __repr__(self):
         typ = "Constructed"
         if self.tag.typ == Types.Primitive:
             typ = "Primitive"
         return f"[{class_to_string(self.tag.cls)}] {tag_to_string(self.tag.nr)} " \
-               f"({typ})"
+               f"({typ})\n{self.child}"
 
     def _read_tag(self):
         byte = self._read_byte()

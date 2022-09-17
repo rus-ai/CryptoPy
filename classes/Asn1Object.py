@@ -104,7 +104,7 @@ class Asn1Object:
                 children += str(child_asn1)
         return "    "*self.intent + \
                f"[{cls_to_string(self.tag.cls)}] {tag_to_string(self.tag.nr)} " \
-               f"({typ}) {value}\n{children}"
+               f"({typ}){value}\n{children}"
 
     def _decode_primitive(self):
         try:
@@ -116,8 +116,18 @@ class Asn1Object:
                 self.repr_value = self._decode_printable_string(self.value)
             elif self.tag.nr == Numbers.ObjectIdentifier:
                 self.repr_value = self._decode_object_identifier(self.value)
+            elif self.tag.nr == Numbers.BitString:
+                self.repr_value = self._decode_bitstring(self.value)
             elif self.tag.nr in (Numbers.Integer, Numbers.Enumerated):
                 self.repr_value = self._decode_integer(self.value)
+            elif self.tag.nr == Numbers.Boolean:
+                self.repr_value = self._decode_boolean(self.value)
+            elif self.tag.nr in (Numbers.Integer, Numbers.Enumerated):
+                self.repr_value = self._decode_integer(self.value)
+            elif self.tag.nr == Numbers.OctetString:
+                self.repr_value = self._decode_octet_string(self.value)
+            elif self.tag.nr == Numbers.Null:
+                self.repr_value = self._decode_null(self.value)
             else:
                 self.repr_value = str(self.value)
             return
@@ -176,24 +186,20 @@ class Asn1Object:
         return bytes_data
 
     @staticmethod
-    def _decode_boolean(bytes_data):  # type: (bytes) -> bool
-        """Decode a boolean value."""
+    def _decode_boolean(bytes_data):
         if len(bytes_data) != 1:
-            raise Error('ASN1 syntax error')
+            raise Exception('ASN1 syntax error')
         if bytes_data[0] == 0:
-            return False
-        return True
+            return "False"
+        return "True"
 
     @staticmethod
-    def _decode_integer(bytes_data):  # type: (bytes) -> int
-        """Decode an integer value."""
+    def _decode_integer(bytes_data):
         values = [int(b) for b in bytes_data]
-        # check if the integer is normalized
         if len(values) > 1 and (values[0] == 0xff and values[1] & 0x80 or values[0] == 0x00 and not (values[1] & 0x80)):
             raise Exception('ASN1 syntax error')
         negative = values[0] & 0x80
         if negative:
-            # make positive by taking two's complement
             for i in range(len(values)):
                 values[i] = 0xff - values[i]
             for i in range(len(values) - 1, -1, -1):
@@ -214,17 +220,15 @@ class Asn1Object:
         return value
 
     @staticmethod
-    def _decode_octet_string(bytes_data):  # type: (bytes) -> bytes
-        return bytes_data
+    def _decode_octet_string(bytes_data):
+        return bytes_data#.hex()
 
     @staticmethod
-    def _decode_null(bytes_data):  # type: (bytes) -> any
-        if len(bytes_data) != 0:
-            raise Error('ASN1 syntax error')
-        return None
+    def _decode_null(bytes_data):
+        return bytes_data#.hex()
 
     @staticmethod
-    def _decode_object_identifier(bytes_data):  # type: (bytes) -> str
+    def _decode_object_identifier(bytes_data):
         result = []
         value = 0
         for i in range(len(bytes_data)):
@@ -243,16 +247,16 @@ class Asn1Object:
 
     @staticmethod
     def _decode_printable_string(bytes_data):
-        return bytes_data.decode('cp1251')
+        return bytes_data.decode('utf-8')
 
     @staticmethod
     def _decode_bitstring(bytes_data):  # type: (bytes) -> str
         if len(bytes_data) == 0:
-            raise Error('ASN1 syntax error')
+            raise Exception('ASN1 syntax error')
 
         num_unused_bits = bytes_data[0]
         if not (0 <= num_unused_bits <= 7):
-            raise Error('ASN1 syntax error')
+            raise Exception('ASN1 syntax error')
 
         if num_unused_bits == 0:
             return bytes_data[1:]
@@ -266,4 +270,4 @@ class Asn1Object:
             remaining[i] = (byte >> num_unused_bits) | (removed_bits << num_unused_bits)
             removed_bits = byte & bitmask
 
-        return bytes(remaining)
+        return bytes(remaining).hex() + f" (Unused bits: {num_unused_bits})"

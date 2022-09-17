@@ -1,3 +1,4 @@
+from classes.Asn1Sequence import Asn1Sequence
 from classes.CurrentUser import CurrentUser
 from classes.CryptoProRegistry import CryptoProRegistry
 from modules.AsnDecoder import print_keyfile
@@ -10,9 +11,11 @@ def main():
     print(f"CryptoPro CSP path", cryptopro.keypath)
     print("Container list:")
     for container_name in cryptopro.containers():
-        print(container_name)
-        container = cryptopro.get_container(container_name)
-        print_keyfile(container.key_header)
+        if container_name == "Samara2021":
+            container = cryptopro.get_container(container_name)
+            print_keyfile(container.key_header)
+            asn1 = Asn1Sequence(container.key_header)
+            print(asn1)
 
 
 if __name__ == '__main__':

@@ -58,22 +58,23 @@ cls_to_string_map = {
 Tag = collections.namedtuple('Tag', 'nr typ cls')
 
 
-def tag_to_string(id):
-    if id in tag_to_string_map:
-        return tag_to_string_map[id]
-    return '{:#02x}'.format(id)
+def tag_to_string(tag):
+    if tag in tag_to_string_map:
+        return tag_to_string_map[tag]
+    return '{:#02x}'.format(tag)
 
 
-def class_to_string(cls):
-    if cls in cls_to_string_map:
-        return cls_to_string_map[cls]
-    raise ValueError('Illegal class: {:#02x}'.format(cls))
+def cls_to_string(tag_class):
+    if tag_class in cls_to_string_map:
+        return cls_to_string_map[tag_class]
+    raise ValueError('Illegal class: {:#02x}'.format(tag_class))
 
 
 class Asn1Sequence:
-    def __init__(self, data):
+    def __init__(self, data, intent=0):
         if not isinstance(data, bytes):
             raise Exception('Expecting bytes instance.')
+        self.intent = intent
         self.m_stack = [[0, bytes(data)]]
         self.m_tag = None
         self.tag = self._read_tag()
@@ -81,14 +82,24 @@ class Asn1Sequence:
         self.value = self._read_value(self.length)
         self.child = []
         if self.tag.typ == Types.Constructed:
-            self.child = Asn1Sequence(self.value)
+            child_asn1 = Asn1Sequence(self.value, intent+1)
+            self.child.append(child_asn1)
 
     def __repr__(self):
         typ = "Constructed"
         if self.tag.typ == Types.Primitive:
             typ = "Primitive"
-        return f"[{class_to_string(self.tag.cls)}] {tag_to_string(self.tag.nr)} " \
-               f"({typ})\n{self.child}"
+        children = ""
+        for child_asn1 in self.child:
+            children += str(child_asn1)
+        return "    "*self.intent + \
+               f"[{cls_to_string(self.tag.cls)}] {tag_to_string(self.tag.nr)} " \
+               f"({typ})\n{children}"
+
+    def _end_of_input(self):
+        index, input_data = self.m_stack[-1]
+        assert not index > len(input_data)
+        return index == len(input_data)
 
     def _read_tag(self):
         byte = self._read_byte()

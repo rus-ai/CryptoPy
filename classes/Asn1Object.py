@@ -84,11 +84,11 @@ class Asn1Object:
         if self.tag.typ == Types.Constructed:
             child_asn1 = Asn1Object(self.value, intent + 1)
             self.children.append(child_asn1)
-            while child_asn1.remain:
-                child_asn1 = Asn1Object(child_asn1.remain, intent + 1)
+            while child_asn1.remains:
+                child_asn1 = Asn1Object(child_asn1.remains, intent + 1)
                 self.children.append(child_asn1)
-        index, remain_data = self.m_stack[-1]
-        self.remain = remain_data[index:]
+        index, remains_data = self.m_stack[-1]
+        self.remains = remains_data[index:]
 
     def __repr__(self):
         typ = "Constructed"

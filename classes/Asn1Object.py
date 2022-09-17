@@ -224,11 +224,11 @@ class Asn1Object:
 
     @staticmethod
     def _decode_octet_string(bytes_data):
-        return bytes_data#.hex()
+        return bytes_data.hex()
 
     @staticmethod
     def _decode_null(bytes_data):
-        return bytes_data#.hex()
+        return bytes_data.hex()
 
     @staticmethod
     def _decode_object_identifier(bytes_data):
